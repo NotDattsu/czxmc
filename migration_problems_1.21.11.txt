@@ -1,0 +1,166 @@
+================================================================================
+RESUMEN: Migration de 1.21.1 a 1.21.11
+================================================================================
+
+ESTADO FINAL: REVERTIDO - El proyecto volvio a 1.21.1
+
+================================================================================
+PROBLEMAS PRINCIPALES ENCONTRADOS
+================================================================================
+
+--------------------------------------------------------------------------------
+1. CAMBIOS DE API EN ENTIDADES (CRITICO)
+--------------------------------------------------------------------------------
+
+Antes (1.21.1):
+  @Override
+  protected void readAdditionalSaveData(CompoundTag tag) {
+      this.data = tag.getInt("data");
+  }
+
+Ahora (1.21.11):
+  @Override
+  protected void readAdditionalSaveData(ValueInput input) {
+      this.data = input.getInt("data").orElse(0);
+  }
+
+El sistema NBT cambio completamente de CompoundTag a ValueInput/ValueOutput.
+No se pudieron encontrar los imports correctos con Mojang Mappings.
+
+Error especifico:
+  AnchorHookEntity is not abstract and does not override abstract method
+  addAdditionalSaveData(ValueOutput) in Entity
+
+
+--------------------------------------------------------------------------------
+2. CAMBIOS EN PROJECTILE ENTITIES
+--------------------------------------------------------------------------------
+
+Antes:
+  super(entityType, level);
+
+Ahora requiere:
+  // El constructor de Projectile cambio
+  super(EntityType<? extends Projectile>, Level)
+
+GunBulletEntity requiere:
+  defineSynchedData(Builder)
+
+
+--------------------------------------------------------------------------------
+3. ENTITYTYPE BUILDER API CHANGES
+--------------------------------------------------------------------------------
+
+Error:
+  method build in class FabricEntityTypeBuilder<T> cannot be applied to given types
+
+El builder de entidades ahora requiere un ResourceKey:
+  .build(ResourceKey<EntityType<?>>)
+
+
+--------------------------------------------------------------------------------
+4. NBT COMPOUNDTAG METHODS
+--------------------------------------------------------------------------------
+
+Antes:
+  tag.contains("key", Tag.TAG_LIST)
+  tag.getList("key", Tag.TAG_STRING)
+
+Ahora retorna Optional:
+  tag.contains("key")  // Ahora retorna Optional<String>
+  tag.getListOr("key", Tag.TAG_STRING)  // Nuevo nombre
+
+
+--------------------------------------------------------------------------------
+5. GECKOLIB 5 IMPORTS (PARCIALMENTE RESUELTO)
+--------------------------------------------------------------------------------
+
+Los paquetes cambiaron:
+  software.bernie.geckolib.animation.AnimatableManager
+  ->
+  software.bernie.geckolib.animatable.manager.AnimatableManager
+
+Pero algunos symbols no se encontraron:
+  AnimationState -> AnimationTest (no verificado)
+  PlayState (no verificado)
+
+
+--------------------------------------------------------------------------------
+6. METHOD NAMES CHANGED
+--------------------------------------------------------------------------------
+
+  ANTES (1.21.1)           | AHORA (1.21.11)
+  -----------------------|-------------------
+  level.isClientSide      | level.isClientSide()
+  serverLevel()       | level() o diferente
+  ResourceLocation | Identifier
+  InteractionResult | ActionResult
+  UseAnim          | ItemUseAnimation
+  TooltipFlag      | TooltipContext
+
+
+--------------------------------------------------------------------------------
+7. FABRIC/PACKAGES QUE YA NO EXISTEN
+--------------------------------------------------------------------------------
+
+  net.minecraft.core.registries.BuiltInRegistries -> puede haber cambiado
+  Certain payload registration methods changed
+
+
+--------------------------------------------------------------------------------
+8. MOJANG MAPPINGS ISSUES
+--------------------------------------------------------------------------------
+
+El proyecto usa MOJANG MAPPINGS y varios symbols no se encuentran porque:
+  Los nombres oficiales de clases cambiaron
+  Falta documentacion para los nuevos packages
+  Es dificil buscar sin Yarn (que ya no estara disponible para 1.21.11+)
+
+
+================================================================================
+ERRORES TOTALES: ~130+
+================================================================================
+
+================================================================================
+POR QUE FALLO
+================================================================================
+
+1. ValueInput/ValueOutput es un sistema completamente nuevo
+2. Mojang Mappings no tiene suficientes ejemplos/documentacion
+3. GeckoLib 5 cambio packages significativamente
+4. No hay backward compatibility - no es solo renombrar, es reescribir
+
+
+================================================================================
+OPCIONES PARA EL FUTURO
+================================================================================
+
+OPCION 1: ESPERAR DOCUMENTACION
+  Cuando haya mas mods actualizados a 1.21.11, va a ver ejemplos de codigo.
+
+OPCION 2: CAMBIAR A YARN MAPPINGS
+  Antes de que sea demasiado tarde, cambiar a Yarn (pero Fabric dice que no
+  va a estar disponible despues de 1.21.11).
+
+OPCION 3: CONTRATAR A ALGUIEN
+  La migracion completa requiere ~40-80 horas de trabajo de un
+  desarrollador experimentado.
+
+OPCION 4: EMPEZAR DESDE CERO
+  Crear un nuevo proyecto en 1.21.11 y copy-paste la logica.
+
+
+================================================================================
+LINKS UTILES ENCONTRADOS
+================================================================================
+
+  Fabric 1.21.11: https://fabricmc.net/2025/12/05/12111.html
+  Fabric Docs Saved Data: https://docs.fabricmc.net/develop/saved-data
+  Fabric Docs First Entity: https://docs.fabricmc.net/develop/entities/first-entity
+  NeoForged ValueIO: https://docs.neoforged.net/docs/datastorage/valueio/
+
+
+================================================================================
+Document created: April 2026
+Commit: a4eb108 (1.21.1 working version)
+================================================================================
