@@ -1,0 +1,438 @@
+CZ x MC WEAPONS — DOCUMENTO DEL MOD
+Versión del documento: Abril 2026
+Minecraft: 1.21.1 Fabric
+================================================================================
+
+
+LORE DEL MOD
+================================================================================
+
+La historia transcurre en un mundo donde todos los personajes son gatos. Tres
+personajes principales se reúnen en la plaza de la ciudad y, al activar
+accidentalmente varios ídolos religiosos a la vez, desencadenan un deseo
+involuntario: tener una aventura sin alejarse de la ciudad. El poder de los
+totems transporta un gran trozo de la ciudad a un universo desconocido,
+arrastrando a todos los presentes.
+
+El objetivo del servidor es recolectar objetos mágicos de este mundo nuevo
+para realizar otro deseo que devuelva a todos a su universo original.
+
+Este universo tiene su propio lore: fue una sociedad de humanos en armonía
+dividida por la magia en cuatro bandos. Tres de ellos son hostiles entre sí:
+  - Los Piglins: liderados por un piglin que quedó atrapado en el Nether
+  - Los Illagers: controlados por un hechicero que tomó el poder de su líder
+  - El Hechicero: un mago muy poderoso que controlaba wardens, encerrado
+    en otra dimensión
+  - Los Pacíficos: el cuarto bando, neutral, que sufrió daño colateral
+
+La guerra terminó cuando los tres bandos (sin sus líderes) se unieron para
+acabar con ellos. El plan casi funcionó, pero el hechicero revivió, arrasó
+con todos, y fue encerrado. Solo quedó un sobreviviente de los cuatro bandos.
+
+
+================================================================================
+ESTADO ACTUAL DEL MOD (qué está programado y funcionando)
+================================================================================
+
+PISTOLA DE DOBLE CAÑÓN — v1 completa
+  Mechanic:
+    - Dos cañones con recarga progresiva (consume pólvora de a una)
+    - Proyectil explosivo con partículas de estela (spritesheet 64x64, 8x8 por sprite)
+    - El proyectil no tiene modelo visual, solo partículas
+    - Al impactar: mezcla visual de explosión + wind charge (GUST_EMITTER_LARGE +
+      EXPLOSION + CRIT + LARGE_SMOKE)
+    - Impulso al jugador al disparar en dirección contraria a donde mira:
+        Condición 1: suelo + apuntando hacia abajo → impulso hacia arriba + Slow Falling
+        Condición 2: en el aire, dentro del límite efectivo → impulso máximo
+        Condición 3: en el aire, límite agotado → impulso reducido
+        Shift cancela el retroceso en cualquier condición
+    - Cooldown visual nativo (barra en hotbar)
+    - Sonidos con variación aleatoria de pitch
+    - Animaciones con GeckoLib (idle, shot, reload)
+    - Modelo 3D y texturas propias
+    - Crafteo funcional
+    - Debug mode con /gundebug
+
+  Mejoras instaladas vía yunque (pistola en una mano, mejora en la otra):
+    - Daño I / II / III        (+20% / +35% / +50% al proyectil y área)
+    - Impulso I / II / III     (+15% / +25% / +40% al multiplicador de propulsión)
+    - Disparos aéreos I / II / III  (+1 / +2 / +3 disparos en condición 2)
+    - Recarga rápida I / II    (x2 / x4 velocidad de recarga, solo 1 a la vez)
+    - Total: 11 items de mejora
+
+  Pendiente de la pistola:
+    - Balas de sangre (depende del amuleto de regen, ver pendientes)
+    - Encantamientos
+    - Texturas de las 11 mejoras (modelos existen, faltan .png)
+
+----
+
+AMULETO DE DASH — v1 completa
+  Mechanic:
+    - Trinket que va en la ranura chest/necklace de Trinkets
+    - Tecla V (configurable en Controles) activa el dash
+    - La dirección del dash depende de las teclas WASD activas del jugador
+      Si no hay input de movimiento, usa la dirección que mira
+    - Componente vertical leve (no es puro horizontal)
+    - Sistema de cargas acumulables: todas recargan juntas al terminar el cooldown
+      (obliga al jugador a gestionar cuántas le quedan)
+    - Recarga manual con Shift + tecla de dash (inicia cooldown voluntariamente)
+    - Cooldown visual en hotbar
+
+  Mejoras del dash (3 ranuras por amuleto, elección entre funcionalidad y especiales):
+    - Cargas +1 / +2           (hasta 3 cargas en total)
+    - Cooldown reducido        (mitad del tiempo)
+    - Especial: Phase          (atraviesa mobs aplicando slowness + wither)
+    - Especial: Impacto        (AoE de knockback en el punto de llegada)
+    - Especial: Atravesar paredes (hasta 2 bloques de grosor)
+    - Total: 5 items de mejora
+
+  Pendiente del dash:
+    - Texturas del amuleto y las 5 mejoras
+    - Sonido de dash (falta el .ogg)
+
+----
+
+ECHO GRENADE — v1 completa
+  Mechanic:
+    - Física custom completa: rebotes realistas por eje, rotación libre con
+      inercia, arrastre de aire, fricción en suelo, anti-tunnel con swept AABB
+    - Estado resting: cuando para, solo aplica gravedad simple hacia abajo,
+      sin rebotes ni spin extra (si se rompe el bloque debajo, cae rígida)
+    - Tres fases:
+        Fase 1 (vuelo, ticks 0-25): partículas sutiles de soul fire
+        Fase 2 (atracción, ticks 25-60): jala mobs dentro de 8 bloques con
+          fuerza creciente, partículas en espiral convergente, sonido de shriek
+        Fase 3 (explosión): mata en radio 3 bloques, paraliza en radio 6
+          (slowness 5 + blindness), sin daño a bloques, shockwave de partículas
+    - Flash de pantalla enviado a jugadores cercanos (radio 20 bloques),
+      intensidad proporcional a la distancia, color blanco-azulado
+    - Sonido metálico al rebotar (pitch decrece con cada rebote)
+    - Modelo 3D con GeckoLib, Echo Shard visible dentro del modelo
+      con efecto de inercia (spring-damper) y glow emisivo pulsante
+    - Item apilable en stacks de 16
+
+----
+
+GRAPPLE HOOK (ANCLA DE ABORDAJE) — v1 en progreso
+  Mechanic actual (prototipo funcional):
+    - Item con modelo GeckoLib (grapple_gun.geo.json + anchor.geo.json)
+    - Click derecho lanza el proyectil AnchorHookEntity
+    - Click derecho de nuevo retracta el ancla activa
+    - El proyectil usa move() + setDeltaMovement() para movimiento suave
+      (sin teleportaciones por tick)
+    - Orientación del modelo hacia la dirección de movimiento en cada tick
+    - Raycasting con ProjectileUtil antes de mover (anti-tunnel)
+    - Cuatro estados: FLYING, HOOKED_BLOCK, HOOKED_MOB, RETRACTING
+    - HOOKED_BLOCK: jala al jugador hacia el ancla
+    - HOOKED_MOB: jala al mob hacia el jugador
+    - RETRACTING: vuela de vuelta al jugador y desaparece al llegar
+    - Timeout: si no enganchó en 40 ticks, retracta sola
+    - Cadena dibujada entre el cañón de la pistola y el proyectil
+      usando ConnectorLineRenderer con la textura de cadena vanilla
+    - El punto de origen del cañón se calcula desde la posición del jugador
+      (no desde bones del item renderer, que tiene coordenadas invertidas)
+
+  Pendiente del grapple hook:
+    - Mecánica de columpio (swing): colgarse y columpiarse con física de péndulo
+    - Mobs jalados van completamente hacia el jugador (en v1 van al punto medio)
+    - Mayor rango, más velocidad de jalón
+    - Sistema de mejoras (múltiples anclas, alcance, daño, impulso)
+    - Animaciones del modelo
+
+----
+
+SISTEMA DE CADENAS / LÍNEAS — funcional
+  ConnectorLineRenderer dibuja una línea de cadena entre dos puntos en el mundo.
+  Usa la textura vanilla de cadena, UV tiling correcto (no se aplasta),
+  iluminación nativa de Minecraft (curva gamma, hora del día).
+  Se usa tanto para el ConnectorItem de debug como para el Grapple Hook.
+
+
+================================================================================
+ITEMS COMPLETOS — descripción detallada
+================================================================================
+
+PISTOLA DE DOBLE CAÑÓN (copper_gun)
+  Tipo: arma de mano principal
+  Crafteo: [Nugget de hierro][Cobre][Cobre] / [Madera][  ][  ]
+  Munición: pólvora (1 por disparo)
+  Mecánica especial: ver sección de estado actual
+  Estado: v1
+
+AMULETO DE DASH (dash_amulet)
+  Tipo: trinket (ranura chest/necklace)
+  Mecánica especial: ver sección de estado actual
+  Estado: v1
+
+ECHO GRENADE (echo_grenade)
+  Tipo: consumible lanzable, apilable x16
+  Mecánica especial: ver sección de estado actual
+  Estado: v1
+
+ANCLA DE ABORDAJE (anchor)
+  Tipo: arma de mano principal
+  Mecánica especial: ver sección de estado actual
+  Estado: v1 en progreso
+
+MEJORAS DE PISTOLA (gun_upgrade_*)
+  11 items: damage_1/2/3, impulse_1/2/3, air_shots_1/2/3, reload_half, reload_quarter
+  Uso: pistola en una mano, mejora en la otra, click derecho. Cuesta 1 nivel de XP.
+  Se pueden remover en el yunque. Máximo 5 mejoras simultáneas.
+
+MEJORAS DE DASH (dash_upgrade_*)
+  5 items: charges_1, charges_2, cooldown_1, special_phase, special_impact, special_wall
+  Uso: amuleto en una mano, mejora en la otra, click derecho. Cuesta 1 nivel de XP.
+  3 ranuras por amuleto. Solo 1 mejora especial por amuleto.
+
+DEBUG GRENADE (debug_grenade)
+  Solo para testing. Versión sin modelo de la echo grenade que usa física.
+
+CONNECTOR (connector)
+  Herramienta de debug para el sistema de cadenas.
+  Click en dos bloques dibuja una línea de cadena entre ellos.
+
+
+================================================================================
+PENDIENTE — ITEMS AÚN NO PROGRAMADOS
+================================================================================
+
+--- ARMAS NORMALES (tier base) ---
+
+SIERRA CIRCULAR
+  Tipo: arma melee de mano principal
+  Ataque primario: daño cuerpo a cuerpo con penetración de armadura
+    (el daño escala con la armadura del objetivo)
+  Ataque secundario (click derecho): gira 360° dañando todos los mobs en
+    radio corto con knockback + slowness. Para limpiar grupos.
+  Mejoras: perforación, duración del AoE, rango del AoE
+
+CUCHILLOS ARROJADIZOS
+  Tipo: consumible lanzable, apilable
+  Daño bajo pero rápido. Lo especial: se mojan en una caldera con poción.
+  Al mojarse, todos los del stack aplican el efecto de esa poción al impactar.
+  La caldera va perdiendo el efecto gradualmente.
+  Sin sistema de mejoras (desechable).
+
+--- ARMAS BERILIO ALUMINOSO (tier mejorado) ---
+
+El berilio aluminoso es un metal nuevo: completamente blanco, liviano, absorbe
+magia. La armadura de berilio nethérico se obtiene durante un evento especial
+y no requiere crafteo manual.
+
+PISTOLA DE BERILIO
+  Misma base que la copper gun, crafteada con berilio + madera + pólvora.
+  Diferencias:
+    - Dispara wind charges como munición (en vez de pólvora)
+    - Más daño y más impulso que la versión de cobre
+    - Los proyectiles aplican levitación a los mobs impactados
+
+GRANADA DE AMATISTA (versión berilio de la echo grenade)
+  Base: echo chamber en vez de fragment
+  Todo lo de la echo grenade + lluvia de proyectiles de amatista en todas
+  direcciones al explotar. Los proyectiles de amatista reducen la armadura
+  del objetivo temporalmente.
+
+DAGAS DE BERILIO (versión mejorada de cuchillos)
+  En vez de un solo efecto de poción, admiten múltiples efectos simultáneamente.
+
+ANCLA DE BERILIO (versión mejorada del grapple hook)
+  Se comporta como grapple de péndulo: te colgás y te columpiás.
+  Mayor rango y velocidad que la versión normal.
+  Los mobs jalados van completamente hacia vos (no a punto medio).
+
+SIERRA DE BERILIO (versión mejorada de sierra)
+  Arma melee pura que reemplaza las armas vanilla en este tier.
+  Ataque rápido con efecto bleeding en cada golpe.
+  Modo motosierra (ataque alternativo): daño continuo al frente,
+  empuja enemigos a los lados mientras avanzás. Para abrirse paso.
+
+--- TRINKETS PENDIENTES ---
+
+AMORTIGUADOR DE CAÍDA
+  Trinket de pies o cintura.
+  Niega daño de caída completamente.
+  Convierte la velocidad de caída en impulso horizontal al aterrizar.
+  Cuanto más caíste, más impulso al tocar el suelo.
+  Combina con disparo hacia abajo de la pistola y el mazo.
+
+REBOTADOR ACUÁTICO
+  Trinket de pies.
+  Al caer al agua, en vez de hundirte, rebotás hacia arriba.
+  La altura del rebote es proporcional a la velocidad de caída. Sin daño.
+  Para mantener movilidad aérea sobre zonas con agua.
+
+GUARDIÁN DE MOMENTUM
+  Trinket de pecho.
+  Reduce la desaceleración horizontal del jugador ~45%.
+  Efecto invisible: solo notás que el movimiento "fluye" más.
+  Hace que pistola, dash y ancla se sientan más fluidos.
+
+GARRAS DE ESCALAR
+  Trinket de manos.
+  Permite aferrarse a paredes y escalarlas lentamente.
+  Se desenganchan al saltar.
+  Combo con dash atravesar paredes para exploración vertical.
+
+AMULETO DE REGENERACIÓN
+  Trinket de cuello.
+  Regen de HP constante lenta, siempre activa.
+  Hecho con cristales de profundidad (ancient city).
+  Prerequisito necesario para que las balas de sangre sean viables.
+
+--- MEJORA ESPECIAL DE PISTOLA (depende del amuleto de regen) ---
+
+BALAS DE SANGRE
+  Mejora especial de la pistola instalable en el yunque.
+  Reemplaza pólvora como munición por HP del jugador (1 corazón por disparo).
+  Nunca te mata directamente.
+  A cambio: daño +30%, impulso +20%, los disparos en aire nunca llegan a
+  condición 3 (siempre condición 2 sin límite efectivo).
+  Sin amuleto de regen sos muy vulnerable al usarla.
+  Con amuleto de regen, la regen compite con el costo de HP → debés ser
+  agresivo para no morir. Si matás rápido, el daño extra amortiza el costo.
+  Filosofía: atacar para sobrevivir (similar a ULTRAKILL).
+
+--- SISTEMA DE VIAJE ---
+
+FRAGMENTO DE RETORNO
+  Consumible recargable de un solo uso.
+  Teletransporte al spawn / ciudad inicial.
+  Requiere 3 segundos de canalización (cancela si recibís daño).
+  Se recarga en un bloque especial con cristales de profundidad.
+  DOBLE ROL: también es el material de reparación del fragmento anclado.
+
+FRAGMENTO ANCLADO (el más complejo del mod)
+  Uno por jugador. Vinculado permanentemente por UUID.
+  Inmune a explosiones y fuego.
+  Si está en un cofre, en el suelo o en la mano de otro jugador:
+    vuelve automáticamente a tu inventario con animación de perla de ender.
+    Si el inventario está lleno, expulsa un item al azar al suelo.
+  Menú de destinos (GUI) con click derecho: elegir a dónde ir, quitar ubicaciones.
+  Ubicaciones disponibles:
+    - Siempre: tu spawn / cama
+    - Bloques de anclaje vinculados con anticlick
+  Se daña con el uso y requiere reparación con fragmentos de retorno.
+    Más ubicaciones = más fragmentos necesarios para reparar.
+  Mejoras del fragmento:
+    - Durabilidad (se daña menos por uso)
+    - Costo de reparación (menos fragmentos necesarios)
+    - Ubicaciones adicionales (permite vincular más bloques)
+    - Especial XP: consume XP en vez de dañar el fragmento. Si no hay XP, daña igual.
+
+BLOQUE DE ANCLAJE
+  Bloque nuevo que se coloca en el mundo y se vincula al fragmento con anticlick.
+  Si se destruye, esa ubicación desaparece del menú.
+
+BLOQUE DE RECARGA
+  Bloque nuevo donde se recargan los fragmentos de retorno.
+  Hecho con cristales de profundidad. Colocado por admins en el servidor.
+
+--- ARMADURAS ---
+
+ARMADURA PIGLIN (tier 1)
+  Se obtiene combinando restos de armadura piglin (drop del Nether)
+  con una armadura de netherite existente.
+  Requiere derrotar al Líder Piglin (jefe 1) para desbloquear el Nether.
+  Bonuses: velocidad aumentada, más protección, menos knockback recibido,
+    resistencia a explosiones, los piglins no te atacan.
+
+ARMADURA FÓSIL (tier 2)
+  Se obtiene combinando restos fósiles (dimensión del warden)
+  con la armadura piglin.
+  Requiere derrotar al Prisionero (jefe 2).
+  Bonus adicional: sin ruido de pasos (como botas de ancient city).
+  Reducción de 2/3 del daño del warden.
+  Mantiene todos los bonuses de la armadura piglin.
+
+ARMADURA DE BERILIO NETHÉRICO (tier 3)
+  NO se craftea. Se transforma automáticamente durante el evento del Illager.
+  Visualmente distinta a todo: fusión de restos piglin + fósiles + magia.
+  Basada en la armadura de la ancient city pero completamente diferente.
+  Mechanic especial: barra de absorción interna.
+    La barra se llena al recibir daño → absorbe golpes mientras esté llena.
+    La barra se vacía atacando → obliga a ser agresivo para mantener la defensa.
+    Barra llena = reduce daño recibido significativamente.
+    Barra vacía = daño completo sin reducción.
+    Si te acorralan sin atacar, la barra se llena y LUEGO te hacen daño normal.
+    El sistema castiga el juego pasivo y recompensa la agresividad.
+
+
+================================================================================
+CONTEO TOTAL DE ITEMS
+================================================================================
+
+Estado actual:
+  Armas completas:          2  (pistola, echo grenade)
+  Armas en progreso:        1  (grapple hook)
+  Mejoras de arma hechas:  16  (11 pistola + 5 dash)
+  Trinkets hechos:          1  (amuleto de dash)
+  Total programado:        20  items
+
+Pendiente:
+  Armas normales:           2  (sierra, cuchillos)
+  Armas de berilio:         5  (pistola, granada, dagas, ancla, sierra)
+  Trinkets:                 5  (amortiguador, rebotador, momentum, garras, regen)
+  Mejoras pendientes:       1  (balas de sangre)
+  Fragmentos de viaje:      2  (retorno, anclado)
+  Bloques nuevos:           2  (anclaje, recarga)
+  Armaduras:                3  (piglin, fósil, berilio nethérico)
+  Total pendiente:         20  items/bloques
+
+Total del mod completo:    ~40 items y bloques nuevos
+
+
+================================================================================
+MECÁNICAS DE COMBATE — FILOSOFÍA DE DISEÑO
+================================================================================
+
+El kit de armas está diseñado en torno a combate agresivo y rápido,
+inspirado en ULTRAKILL. Los items no reemplazan el combate de Minecraft
+sino que añaden capas de decisión sobre él.
+
+Las armas vanilla (mazo, lanza, espada, arco) siguen siendo relevantes:
+  - Mazo: más daño cuanto más caíste → combo natural con la pistola
+  - Lanza: combo con ancla (el ancla alinea al mob, la lanza lo ensarta)
+  - Espada/Arco: base del kit, siempre útiles
+
+Las armas del mod cubren roles específicos:
+  - Pistola: movilidad ofensiva + daño a distancia (requiere munición)
+  - Ancla: acercamiento y control de posición
+  - Sierra: melee veloz + limpiar grupos
+  - Granada: setup para grupos + control de área
+  - Cuchillos: aplicación de efectos a distancia (requiere preparación)
+  - Dash: movilidad pura, sin daño
+
+Loop de combate pensado:
+  Pistola te lanza → Ancla redirige o jala mobs → Sierra/mazo en melee →
+  Granada para grupos → Dash para reposicionarte
+
+Cada arma tiene un estado donde es la mejor opción, ninguna domina sola.
+
+
+================================================================================
+NOTAS TÉCNICAS
+================================================================================
+
+Framework: Fabric 1.21.1
+Renderizado 3D: GeckoLib 4.7.2
+Slots de equipamiento: Trinkets 3.10.0
+
+El sistema de física de la granada (GrenadeEntity) es una base reutilizable.
+EchoGrenadeEntity extiende GrenadeEntity sobreescribiendo onBounce(),
+onExplosion() y onPhysicsTick(). Las armas futuras pueden hacer lo mismo.
+
+El sistema de cadenas (ConnectorLineRenderer) es independiente y reutilizable.
+Lo usa tanto el ConnectorItem (debug) como el Grapple Hook.
+
+El sistema de partículas de la pistola usa una spritesheet de 64x64
+con sprites de 8x8 (64 sprites totales). Cada partícula elige uno al azar,
+rota sobre sí misma y se desvanece. Blend aditivo para efecto de glow.
+
+La arquitectura del dash usa un paquete C2S (DashPayload) para que el cliente
+envíe la dirección WASD al servidor, evitando el problema de que el servidor
+no sabe qué teclas presiona el jugador.
+
+Los fragmentos de retorno y anclado usan Crystal Shards de las ancient cities
+como material. Esto es narrativamente coherente con el lore: las ancient cities
+son las últimas ruinas de la civilización que existía antes de la guerra.

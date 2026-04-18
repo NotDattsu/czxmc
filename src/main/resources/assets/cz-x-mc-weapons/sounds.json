@@ -1,0 +1,134 @@
+{
+  "gun_shoot": {
+    "subtitle": "subtitles.cz-x-mc-weapons.gun_shoot",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/gun_shoot",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "gun_shoot_alt": {
+    "subtitle": "subtitles.cz-x-mc-weapons.gun_shoot",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/gun_shoot_alt",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "gun_reload": {
+    "subtitle": "subtitles.cz-x-mc-weapons.gun_reload",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/gun_reload",
+        "volume": 0.9,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "gun_hit": {
+    "subtitle": "subtitles.cz-x-mc-weapons.gun_hit",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/gun_hit",
+        "volume": 0.8,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "gun_upgrade": {
+    "subtitle": "subtitles.cz-x-mc-weapons.gun_upgrade",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/gun_upgrade",
+        "volume": 0.9,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "dash": {
+    "subtitle": "subtitles.cz-x-mc-weapons.dash",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/dash",
+        "volume": 0.8,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "echo_grenade_hit1": {
+    "subtitle": "subtitles.cz-x-mc-weapons.echo_grenade_hit",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/echo_grenade_hit1",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "echo_grenade_hit2": {
+    "subtitle": "subtitles.cz-x-mc-weapons.echo_grenade_hit",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/echo_grenade_hit2",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "echo_grenade_hit3": {
+    "subtitle": "subtitles.cz-x-mc-weapons.echo_grenade_hit",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/echo_grenade_hit3",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "echo_grenade_before": {
+    "subtitle": "subtitles.cz-x-mc-weapons.echo_grenade_before",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/echo_grenade_before",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  },
+  "echo_grenade_explosion": {
+    "subtitle": "subtitles.cz-x-mc-weapons.echo_grenade_explosion",
+    "sounds": [
+      {
+        "name": "cz-x-mc-weapons:item/echo_grenade_explosion",
+        "volume": 1.0,
+        "pitch": 2.0,
+        "weight": 1,
+        "stream": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "cz-x-mc-weapons:item/gun_upgrade_air_shots_1"
+  }
+}

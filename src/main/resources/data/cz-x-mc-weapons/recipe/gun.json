@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NCC",
+    "P  "
+  ],
+  "key": {
+    "N": { "item": "minecraft:iron_nugget" },
+    "C": { "item": "minecraft:copper_ingot" },
+    "P": { "item": "minecraft:oak_planks" }
+  },
+  "result": {
+    "id": "cz-x-mc-weapons:gun",
+    "count": 1
+  }
+}

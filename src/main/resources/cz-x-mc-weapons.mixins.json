@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "weapons.czxmc.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"ExampleMixin",
+		"ServerGamePacketListenerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

@@ -1,0 +1,15 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "idle": {
+      "loop": true,
+      "animation_length": 1.0,
+      "bones": { "All": {} }
+    },
+    "throw": {
+      "loop": false,
+      "animation_length": 0.5,
+      "bones": { "All": {} }
+    }
+  }
+}
