@@ -1,0 +1,464 @@
+GUÍA DE MIGRACIÓN: 1.21.1 → 1.21.11 + GeckoLib 5 (sin Trinkets)
+=================================================================
+
+Esta guía asume que partís del proyecto "CZ x MC Weapons" en MC 1.21.1
+con GeckoLib 4.7.2 y Trinkets 3.10.0, y que el objetivo es migrar a
+MC 1.21.11 con GeckoLib 5.4.4, eliminando completamente el sistema de
+amuletos (Trinkets no existe para 1.21.11).
+
+Los cambios se organizan en orden lógico: primero el build, luego los
+archivos a borrar, luego el código Java que hay que modificar.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 1 — gradle.properties
+─────────────────────────────────────────────────────────────────────
+
+Cambiar las siguientes líneas:
+
+  minecraft_version=1.21.11
+  loader_version=0.16.14        (o la última disponible en fabricmc.net/develop para 1.21.11)
+  loom_version=1.10-SNAPSHOT    (verificar la última en el repo de Fabric Loom)
+  fabric_api_version=<la última para 1.21.11, buscar en fabricmc.net/develop>
+
+Agregar la línea nueva:
+
+  geckolib_version=5.4.4
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 2 — build.gradle
+─────────────────────────────────────────────────────────────────────
+
+En el bloque repositories, reemplazar el bloque de GeckoLib actual por
+la forma recomendada para GeckoLib 5 (exclusiveContent), y eliminar los
+repositorios de Trinkets (TerraformersMC y Ladysnake Libs), ya que no
+se usan más:
+
+  repositories {
+      exclusiveContent {
+          forRepository {
+              maven {
+                  name = 'GeckoLib'
+                  url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+              }
+          }
+          filter {
+              includeGroup('software.bernie.geckolib')
+          }
+      }
+  }
+
+En el bloque dependencies, reemplazar la línea de GeckoLib y eliminar
+la de Trinkets:
+
+  ANTES:
+    modImplementation "software.bernie.geckolib:geckolib-fabric-1.21.1:4.7.2"
+    modImplementation "dev.emi:trinkets:3.10.0"
+
+  DESPUÉS:
+    modImplementation "software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}"
+    (la línea de trinkets se elimina completamente)
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 3 — fabric.mod.json
+─────────────────────────────────────────────────────────────────────
+
+En el bloque "depends", hacer dos cambios:
+
+  1. Actualizar la versión de Minecraft:
+       "minecraft": "~1.21.1"  →  "minecraft": ">=1.21.11 <1.22"
+
+  2. Eliminar la dependencia de trinkets:
+       "trinkets": "*"   ← borrar esta línea
+
+  3. Actualizar fabricloader si es necesario:
+       "fabricloader": ">=0.18.6"  →  "fabricloader": ">=0.16.0"
+       (o la versión mínima que corresponda al loader que estés usando)
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 4 — Borrar archivos relacionados con Trinkets
+─────────────────────────────────────────────────────────────────────
+
+Los siguientes archivos ya no tienen razón de existir y deben eliminarse
+del proyecto:
+
+  Código Java:
+    src/main/java/weapons/czxmc/item/DashItem.java
+      → extiende TrinketItem, clase entera cae
+
+  Data (server-side):
+    src/main/resources/data/trinkets/
+      → borrar el directorio completo (contiene tags de entidades y slots)
+    src/main/resources/data/cz-x-mc-weapons/tags/trinkets/
+      → borrar el directorio completo (contiene chest/necklace.json)
+
+  Assets (client-side):
+    src/main/resources/assets/cz-x-mc-weapons/models/item/dash_amulet.json
+      → el modelo del amuleto ya no existe como item
+
+  Langs:
+    En en_us.json y es_ar.json, eliminar todas las entradas que
+    correspondan al "dash_amulet" y sus textos de tooltip.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 5 — ModItems.java
+─────────────────────────────────────────────────────────────────────
+
+Con DashItem eliminado, ModItems.java necesita estos cambios:
+
+  1. Eliminar el import:
+       import weapons.czxmc.item.DashItem;
+
+  2. Eliminar el campo y su registro:
+       public static final Item DASH_AMULET = registerItem("dash_amulet",
+               new DashItem(new Item.Properties().stacksTo(1)));
+
+  3. Decidir qué hacer con los DASH_UPGRADE_*:
+     Los ítems DashUpgrade (DASH_UPGRADE_CHARGES_1, CHARGES_2,
+     COOLDOWN_1, SPECIAL_PHASE, SPECIAL_IMPACT, SPECIAL_WALL) referencian
+     a DashItem en DashUpgradeItem.java. Si también se eliminan, borrar
+     todos estos campos. Si se quieren mantener para una reimplementación
+     futura sin Trinkets, hay que reescribir DashUpgradeItem primero
+     (ver Paso 6).
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 6 — DashUpgradeItem.java (si se decide conservar upgrades)
+─────────────────────────────────────────────────────────────────────
+
+DashUpgradeItem.java tiene una verificación tipo:
+  if (!(amuletStack.getItem() instanceof DashItem)) { ... }
+
+Sin DashItem, esto rompe. Hay dos opciones:
+
+  Opción A — Eliminar también DashUpgradeItem.java y todos los
+  DASH_UPGRADE_* de ModItems. Es lo más limpio si no hay un
+  reemplazo para el sistema de dash.
+
+  Opción B — Reimplementar DashItem como un Item normal (sin
+  extender TrinketItem), que se equipe en el inventario normal
+  o que funcione en la mano, y actualizar DashUpgradeItem para
+  que verifique contra esa nueva clase. Esto implica reescribir
+  toda la lógica de activación del dash (que actualmente se
+  triggeraba desde el slot de trinket).
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 7 — Mover archivos de assets de GeckoLib
+─────────────────────────────────────────────────────────────────────
+
+GeckoLib 5 cambió las rutas esperadas para los archivos de modelo y
+animación. En GeckoLib 4 estaban en:
+
+  assets/<modid>/geo/
+  assets/<modid>/animations/
+
+En GeckoLib 5 deben estar en:
+
+  assets/<modid>/geckolib/models/
+  assets/<modid>/geckolib/animations/
+
+Por lo tanto hay que mover físicamente los archivos:
+
+  geo/anchor.geo.json            → geckolib/models/anchor.geo.json
+  geo/echo_grenade.geo.json      → geckolib/models/echo_grenade.geo.json
+  geo/grapple_gun.geo.json       → geckolib/models/grapple_gun.geo.json
+  geo/gun.geo.json               → geckolib/models/gun.geo.json
+
+  animations/anchor.animation.json       → geckolib/animations/anchor.animation.json
+  animations/anchor_hook.animation.json  → geckolib/animations/anchor_hook.animation.json
+  animations/echo_grenade.animation.json → geckolib/animations/echo_grenade.animation.json
+  animations/gun.animation.json          → geckolib/animations/gun.animation.json
+
+Las texturas NO se mueven, siguen en assets/<modid>/textures/ igual
+que siempre.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 8 — GeoModel: actualizar rutas en el código Java
+─────────────────────────────────────────────────────────────────────
+
+En GeckoLib 4, los métodos getModelResource y getAnimationResource
+devolvían la ruta completa incluyendo el prefijo de directorio y la
+extensión del archivo. En GeckoLib 5, los paths son relativos a las
+nuevas carpetas y ya NO llevan ni el directorio base ni la extensión.
+
+Esto afecta a todas las clases internas GeoModel dentro de:
+  GunRenderer.java
+  EchoGrenadeRenderer.java
+  EchoGrenadeItemRenderer.java
+  AnchorSystemRenderer.java (clases GunModel y HookModel internas)
+
+Ejemplo de cómo cambia GunRenderer.GunModel:
+
+  ANTES (GeckoLib 4):
+    @Override
+    public ResourceLocation getModelResource(GunItem animatable) {
+        return ResourceLocation.fromNamespaceAndPath(
+            CZXMCWeapons.MOD_ID, "geo/gun.geo.json"
+        );
+    }
+    @Override
+    public ResourceLocation getTextureResource(GunItem animatable) {
+        return ResourceLocation.fromNamespaceAndPath(
+            CZXMCWeapons.MOD_ID, "textures/item/copper_gun.png"
+        );
+    }
+    @Override
+    public ResourceLocation getAnimationResource(GunItem animatable) {
+        return ResourceLocation.fromNamespaceAndPath(
+            CZXMCWeapons.MOD_ID, "animations/gun.animation.json"
+        );
+    }
+
+  DESPUÉS (GeckoLib 5):
+    @Override
+    public ResourceLocation getModelResource(GunItem animatable) {
+        return ResourceLocation.fromNamespaceAndPath(
+            CZXMCWeapons.MOD_ID, "gun"
+        );
+    }
+    @Override
+    public ResourceLocation getTextureResource(GunItem animatable) {
+        return ResourceLocation.fromNamespaceAndPath(
+            CZXMCWeapons.MOD_ID, "textures/item/copper_gun.png"
+        );
+    }
+    @Override
+    public ResourceLocation getAnimationResource(GunItem animatable) {
+        return ResourceLocation.fromNamespaceAndPath(
+            CZXMCWeapons.MOD_ID, "gun"
+        );
+    }
+
+GeckoLib 5 busca automáticamente en geckolib/models/<nombre>.geo.json
+y geckolib/animations/<nombre>.animation.json. La textura sigue
+igual (ruta completa dentro de textures/).
+
+Aplicar este mismo patrón a todos los GeoModel del proyecto.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 9 — AnimationState → AnimationTest en todos los controllers
+─────────────────────────────────────────────────────────────────────
+
+En GeckoLib 5, la clase AnimationState que se recibía como parámetro
+en los predicados de AnimationController fue renombrada a AnimationTest,
+para no confundirse con la clase vanilla del mismo nombre. El
+comportamiento es el mismo, solo cambia el nombre de la clase y su
+import.
+
+Buscar en todo el proyecto (principalmente GunItem.java y cualquier
+entidad con animaciones) los usos de AnimationState como parámetro
+de lambda y reemplazarlos:
+
+  ANTES:
+    import software.bernie.geckolib.animation.AnimationState;
+    ...
+    new AnimationController<>(this, "controller", 0,
+        (AnimationState<GunItem> state) -> {
+            ...
+            return PlayState.CONTINUE;
+        })
+
+  DESPUÉS:
+    import software.bernie.geckolib.animation.AnimationTest;
+    ...
+    new AnimationController<>(this, "controller", 0,
+        (AnimationTest<GunItem> state) -> {
+            ...
+            return PlayState.CONTINUE;
+        })
+
+Nota: AnimationState sigue existiendo en GeckoLib 5 pero es ahora
+una clase interna del sistema de renderizado. No usarla directamente
+en los controllers.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 10 — GeoEntityRenderer y GeoItemRenderer: segundo genérico
+─────────────────────────────────────────────────────────────────────
+
+En GeckoLib 5, todos los renderers requieren un segundo tipo genérico
+correspondiente al RenderState que usan. Para los casos normales
+(sin RenderState customizado) se usa GeoRenderState.
+
+Afecta a:
+  EchoGrenadeRenderer.java
+  EchoGrenadeItemRenderer.java
+  GunRenderer.java
+  AnchorSystemRenderer.java (clases internas GunItemRenderer y HookEntityRenderer)
+
+Ejemplo:
+
+  ANTES:
+    public class EchoGrenadeRenderer extends GeoEntityRenderer<GrenadeEntity>
+    public class GunRenderer extends GeoItemRenderer<GunItem>
+
+  DESPUÉS:
+    import software.bernie.geckolib.renderer.GeoRenderState;
+    ...
+    public class EchoGrenadeRenderer extends GeoEntityRenderer<GrenadeEntity, GeoRenderState>
+    public class GunRenderer extends GeoItemRenderer<GunItem, GeoRenderState>
+
+Lo mismo aplica para todas las subclases de GeoItemRenderer y
+GeoEntityRenderer en el proyecto.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 11 — Registro de renderers de items: reemplazar BuiltinItemRendererRegistry
+─────────────────────────────────────────────────────────────────────
+
+En GeckoLib 4, los item renderers se registraban en el cliente así
+(en CZXMCWeaponsClient.java):
+
+  BuiltinItemRendererRegistry.INSTANCE.register(ModItems.GUN, gunRenderer::renderByItem);
+  BuiltinItemRendererRegistry.INSTANCE.register(ModItems.ECHO_GRENADE, echoItemRenderer::renderByItem);
+  BuiltinItemRendererRegistry.INSTANCE.register(ModItems.ANCHOR, anchorRenderer::renderByItem);
+
+En GeckoLib 5 este sistema cambia. El renderer se registra
+sobreescribiendo el método createGeoRenderer directamente en la clase
+del item, en lugar de hacerlo desde el cliente. Las líneas de
+BuiltinItemRendererRegistry en CZXMCWeaponsClient.java se eliminan.
+
+En GunItem.java (y lo mismo para EchoGrenadeItem.java y AnchorItem.java)
+agregar:
+
+  import software.bernie.geckolib.renderer.GeoRenderProvider;
+  import java.util.function.Consumer;
+  ...
+  @Override
+  public void createGeoRenderer(Consumer<GeoRenderProvider> consumer) {
+      consumer.accept(new GeoRenderProvider() {
+          private GunRenderer renderer;
+
+          @Override
+          public GeoItemRenderer<?> getGeoItemRenderer() {
+              if (this.renderer == null)
+                  this.renderer = new GunRenderer();
+              return this.renderer;
+          }
+      });
+  }
+
+Repetir este patrón en EchoGrenadeItem.java (usando EchoGrenadeItemRenderer)
+y en AnchorItem.java (usando el GunItemRenderer interno de AnchorSystemRenderer).
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 12 — GeoRenderLayer: renderForBone → createPerBoneRender
+─────────────────────────────────────────────────────────────────────
+
+En GeckoLib 4, los GeoRenderLayer sobreescribían renderForBone() y
+hacían el render directamente dentro. En GeckoLib 5, el método se
+renombró a createPerBoneRender() y ahora debe devolver un Runnable
+que se ejecutará después.
+
+Esto afecta a la clase EmissiveLayer dentro de EchoGrenadeItemRenderer
+y la capa equivalente en EchoGrenadeRenderer.
+
+  ANTES (GeckoLib 4):
+    @Override
+    public void renderForBone(PoseStack poseStack, ...) {
+        // render directo aquí
+    }
+
+  DESPUÉS (GeckoLib 5):
+    @Override
+    public Runnable createPerBoneRender(PoseStack poseStack, ...) {
+        return () -> {
+            // render dentro del runnable
+        };
+    }
+
+Revisar la firma exacta del método en la versión de GeckoLib 5 que
+se esté usando, ya que puede variar levemente entre subversiones 5.x.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 13 — Singleton animatables: verificar imports
+─────────────────────────────────────────────────────────────────────
+
+En GeckoLib 4, el registro de singletons animatables se hacía con:
+  SingletonGeoAnimatable.registerSyncedAnimatable(this);
+
+En GeckoLib 5, esta funcionalidad fue movida a SyncedSingletonAnimatableCache.
+Si el código actual usa SingletonGeoAnimatable.registerSyncedAnimatable(),
+es posible que el import y/o la clase hayan cambiado de paquete.
+
+Verificar en GunItem.java (que implementa GeoItem y usa este registro)
+que los imports resuelvan correctamente con la nueva versión. Si hay
+errores de compilación en esta línea, buscar la clase equivalente en
+el paquete software.bernie.geckolib de GeckoLib 5.
+
+
+─────────────────────────────────────────────────────────────────────
+PASO 14 — Verificación final de compilación
+─────────────────────────────────────────────────────────────────────
+
+Una vez aplicados todos los pasos anteriores, correr:
+
+  ./gradlew build
+
+Los errores más probables que pueden aparecer y cómo resolverlos:
+
+  "cannot find symbol: class TrinketItem"
+    → DashItem.java no fue eliminado o ModItems todavía lo importa.
+
+  "cannot find symbol: class AnimationState" (en un controller)
+    → Falta renombrar a AnimationTest en ese controller.
+
+  "GeoItemRenderer is not generic" o "wrong number of type arguments"
+    → Falta agregar el segundo genérico <GeoRenderState> en el renderer.
+
+  "cannot find symbol: method renderForBone"
+    → Renombrar a createPerBoneRender y ajustar el tipo de retorno a Runnable.
+
+  "cannot find symbol: method register(Item, ...)" en BuiltinItemRendererRegistry
+    → Eliminar esas líneas del cliente y mover el registro a createGeoRenderer
+      en el item correspondiente.
+
+  Errores de ResourceLocation en los GeoModel
+    → Las rutas ahora son relativas y sin extensión (ver Paso 8).
+
+  Errores de fabric-api relacionados con networking u otros sistemas
+    → MC 1.21.11 puede tener cambios menores en la API de Fabric.
+      Revisar el changelog de Fabric API para 1.21.11 si aparecen
+      errores específicos en clases como ServerPlayNetworking o
+      similares.
+
+
+─────────────────────────────────────────────────────────────────────
+RESUMEN DE ARCHIVOS MODIFICADOS
+─────────────────────────────────────────────────────────────────────
+
+  BORRAR:
+    src/main/java/weapons/czxmc/item/DashItem.java
+    src/main/resources/data/trinkets/  (directorio completo)
+    src/main/resources/data/cz-x-mc-weapons/tags/trinkets/  (directorio completo)
+    src/main/resources/assets/cz-x-mc-weapons/models/item/dash_amulet.json
+
+  MOVER (assets de GeckoLib):
+    geo/*.geo.json             → geckolib/models/*.geo.json
+    animations/*.animation.json → geckolib/animations/*.animation.json
+
+  MODIFICAR:
+    gradle.properties                           (versiones)
+    build.gradle                                (repos y dependencias)
+    fabric.mod.json                             (versión MC, quitar trinkets)
+    ModItems.java                               (quitar DASH_AMULET)
+    DashUpgradeItem.java                        (reescribir o borrar)
+    GunItem.java                                (AnimationTest, createGeoRenderer)
+    EchoGrenadeItem.java                        (createGeoRenderer)
+    AnchorItem.java                             (createGeoRenderer)
+    GunRenderer.java                            (2do genérico, rutas GeoModel)
+    EchoGrenadeRenderer.java                    (2do genérico, createPerBoneRender, rutas)
+    EchoGrenadeItemRenderer.java                (2do genérico, createPerBoneRender, rutas)
+    AnchorSystemRenderer.java                   (2do genérico en renderers internos, rutas)
+    GrenadeEntity.java                          (AnimationTest si tiene controllers)
+    CZXMCWeaponsClient.java                     (quitar BuiltinItemRendererRegistry)
+    en_us.json / es_ar.json                     (quitar entradas de dash_amulet)
